@@ -15,7 +15,6 @@ import lombok.NoArgsConstructor;
 @Builder
 public class TicketRequestDTO {
 
-    @NotNull(message = "El ID de usuario es obligatorio")
     private Long usuarioId;
 
     @NotBlank(message = "El asunto es obligatorio")

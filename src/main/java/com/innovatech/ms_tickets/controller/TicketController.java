@@ -3,6 +3,10 @@ package com.innovatech.ms_tickets.controller;
 import com.innovatech.ms_tickets.dto.request.TicketRequestDTO;
 import com.innovatech.ms_tickets.dto.request.TicketUpdateRequestDTO;
 import com.innovatech.ms_tickets.dto.response.TicketResponseDTO;
+import com.innovatech.ms_tickets.model.enums.Estado;
+import com.innovatech.ms_tickets.model.enums.Prioridad;
+import com.innovatech.ms_tickets.security.AuthenticatedUser;
+import com.innovatech.ms_tickets.security.SecurityUtils;
 import com.innovatech.ms_tickets.service.TicketService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -20,6 +24,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import org.springframework.security.core.Authentication;
 
 @RestController
 @RequestMapping("/api/v1/tickets")
@@ -29,6 +34,7 @@ import java.util.List;
 public class TicketController {
 
     private final TicketService ticketService;
+    private final SecurityUtils securityUtils;
 
     @Operation(
             summary = "Crear un nuevo ticket",
@@ -53,8 +59,10 @@ public class TicketController {
     })
     @PostMapping
     public ResponseEntity<TicketResponseDTO> crearTicket(
-            @Valid @RequestBody TicketRequestDTO requestDTO) {
-        TicketResponseDTO response = ticketService.crearTicket(requestDTO);
+            @Valid @RequestBody TicketRequestDTO requestDTO,
+            Authentication authentication) {
+        AuthenticatedUser currentUser = securityUtils.requireUser(authentication);
+        TicketResponseDTO response = ticketService.crearTicket(requestDTO, currentUser);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
@@ -77,8 +85,10 @@ public class TicketController {
     @GetMapping("/{id}")
     public ResponseEntity<TicketResponseDTO> obtenerTicketPorId(
             @Parameter(description = "ID del ticket", required = true)
-            @PathVariable @Positive(message = "El id debe ser mayor a cero") Long id) {
-        TicketResponseDTO response = ticketService.obtenerTicketPorId(id);
+            @PathVariable @Positive(message = "El id debe ser mayor a cero") Long id,
+            Authentication authentication) {
+        AuthenticatedUser currentUser = securityUtils.requireUser(authentication);
+        TicketResponseDTO response = ticketService.obtenerTicketPorId(id, currentUser);
         return ResponseEntity.ok(response);
     }
 
@@ -96,9 +106,17 @@ public class TicketController {
     @GetMapping("/usuario/{usuarioId}")
     public ResponseEntity<List<TicketResponseDTO>> listarHistorialPorUsuario(
             @Parameter(description = "ID del usuario", required = true)
-            @PathVariable @Positive(message = "El usuarioId debe ser mayor a cero") Long usuarioId) {
-        List<TicketResponseDTO> response = ticketService.listarHistorialPorUsuario(usuarioId);
+            @PathVariable @Positive(message = "El usuarioId debe ser mayor a cero") Long usuarioId,
+            Authentication authentication) {
+        AuthenticatedUser currentUser = securityUtils.requireUser(authentication);
+        List<TicketResponseDTO> response = ticketService.listarHistorialPorUsuario(usuarioId, currentUser);
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/mis")
+    public ResponseEntity<List<TicketResponseDTO>> listarMisTickets(Authentication authentication) {
+        AuthenticatedUser currentUser = securityUtils.requireUser(authentication);
+        return ResponseEntity.ok(ticketService.listarMisTickets(currentUser));
     }
 
     @Operation(
@@ -116,6 +134,24 @@ public class TicketController {
     public ResponseEntity<List<TicketResponseDTO>> listarTodosLosTickets() {
         List<TicketResponseDTO> response = ticketService.listarTodosLosTickets();
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping(params = "usuarioId")
+    public ResponseEntity<List<TicketResponseDTO>> listarTicketsPorUsuarioQuery(
+            @RequestParam @Positive(message = "El usuarioId debe ser mayor a cero") Long usuarioId,
+            Authentication authentication) {
+        AuthenticatedUser currentUser = securityUtils.requireUser(authentication);
+        return ResponseEntity.ok(ticketService.listarHistorialPorUsuario(usuarioId, currentUser));
+    }
+
+    @GetMapping(params = "estado")
+    public ResponseEntity<List<TicketResponseDTO>> listarTicketsPorEstado(@RequestParam Estado estado) {
+        return ResponseEntity.ok(ticketService.listarPorEstado(estado));
+    }
+
+    @GetMapping(params = "prioridad")
+    public ResponseEntity<List<TicketResponseDTO>> listarTicketsPorPrioridad(@RequestParam Prioridad prioridad) {
+        return ResponseEntity.ok(ticketService.listarPorPrioridad(prioridad));
     }
 
     @Operation(
@@ -143,8 +179,10 @@ public class TicketController {
     public ResponseEntity<TicketResponseDTO> actualizarTicket(
             @Parameter(description = "ID del ticket", required = true)
             @PathVariable @Positive(message = "El id debe ser mayor a cero") Long id,
-            @Valid @RequestBody TicketUpdateRequestDTO requestDTO) {
-        TicketResponseDTO response = ticketService.actualizarEstadoYPrioridad(id, requestDTO);
+            @Valid @RequestBody TicketUpdateRequestDTO requestDTO,
+            Authentication authentication) {
+        AuthenticatedUser currentUser = securityUtils.requireUser(authentication);
+        TicketResponseDTO response = ticketService.actualizarEstadoYPrioridad(id, requestDTO, currentUser);
         return ResponseEntity.ok(response);
     }
 }
