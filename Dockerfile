@@ -14,5 +14,7 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY --from=build /app/target/*.jar app.jar
+ENV SPRING_PROFILES_ACTIVE=aws
+ENV JAVA_OPTS=""
 EXPOSE 8085
-ENTRYPOINT ["java","-jar","/app/app.jar"]
+ENTRYPOINT ["sh","-c","java $JAVA_OPTS -jar /app/app.jar"]
